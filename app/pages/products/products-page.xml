@@ -1,0 +1,17 @@
+<Page xmlns="http://schemas.nativescript.org/tns.xsd" navigatingTo="onNavigatingTo">
+    <GridLayout rows="auto, *" class="p-4">
+        <Label row="0" text="Products" class="text-2xl font-bold mb-4"/>
+        <ListView row="1" items="{{ products }}" class="list-group">
+            <ListView.itemTemplate>
+                <GridLayout columns="*, auto" class="p-2 border-b border-gray-200">
+                    <StackLayout col="0">
+                        <Label text="{{ name }}" class="text-lg font-semibold"/>
+                        <Label text="{{ 'Quantity: ' + quantity }}" class="text-sm text-gray-600"/>
+                        <Label text="{{ 'Price: $' + price }}" class="text-sm text-gray-600"/>
+                    </StackLayout>
+                    <Button col="1" text="Edit" tap="onEditProduct" class="bg-blue-500 text-white px-4"/>
+                </GridLayout>
+            </ListView.itemTemplate>
+        </ListView>
+    </GridLayout>
+</Page>

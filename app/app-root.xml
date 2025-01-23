@@ -1,0 +1,3 @@
+<Frame defaultPage="pages/dashboard/dashboard-page">
+    <ActionBar title="Shop Inventory" />
+</Frame>

@@ -1,0 +1,18 @@
+<Page xmlns="http://schemas.nativescript.org/tns.xsd" navigatingTo="onNavigatingTo">
+    <GridLayout rows="auto, *, auto" class="p-4">
+        <Label row="0" text="New Sale" class="text-2xl font-bold mb-4"/>
+        <ListView row="1" items="{{ products }}" class="list-group">
+            <ListView.itemTemplate>
+                <GridLayout columns="*, auto" class="p-2 border-b border-gray-200">
+                    <StackLayout col="0">
+                        <Label text="{{ name }}" class="text-lg font-semibold"/>
+                        <Label text="{{ 'Available: ' + quantity }}" class="text-sm text-gray-600"/>
+                        <Label text="{{ 'Price: $' + price }}" class="text-sm text-gray-600"/>
+                    </StackLayout>
+                    <TextField col="1" text="{{ saleQuantity }}" hint="Qty" keyboardType="number" class="w-16 text-center"/>
+                </GridLayout>
+            </ListView.itemTemplate>
+        </ListView>
+        <Button row="2" text="Complete Sale" tap="onCompleteSale" class="bg-green-500 text-white"/>
+    </GridLayout>
+</Page>

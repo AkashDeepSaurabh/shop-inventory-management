@@ -1,0 +1,22 @@
+<Page xmlns="http://schemas.nativescript.org/tns.xsd" navigatingTo="onNavigatingTo" class="page">
+    <GridLayout rows="auto, *" class="p-4">
+        <StackLayout row="0" class="mb-4">
+            <Label text="Dashboard" class="text-2xl font-bold mb-2"/>
+            <GridLayout columns="*, *" rows="auto" class="mb-4">
+                <StackLayout col="0" class="mr-2 p-4 bg-blue-100 rounded">
+                    <Label text="Total Products" class="text-sm"/>
+                    <Label text="{{ totalProducts }}" class="text-xl font-bold"/>
+                </StackLayout>
+                <StackLayout col="1" class="ml-2 p-4 bg-green-100 rounded">
+                    <Label text="Total Sales" class="text-sm"/>
+                    <Label text="{{ totalSales }}" class="text-xl font-bold"/>
+                </StackLayout>
+            </GridLayout>
+        </StackLayout>
+
+        <GridLayout row="1" rows="*, *">
+            <Button row="0" text="Manage Products" tap="onManageProducts" class="m-2 bg-blue-500 text-white"/>
+            <Button row="1" text="New Sale" tap="onNewSale" class="m-2 bg-green-500 text-white"/>
+        </GridLayout>
+    </GridLayout>
+</Page>

@@ -1,0 +1,15 @@
+{
+    "shops": {
+      "Hanuman Hardware": {
+        "shopName": "Hanuman Hardware",
+        "address": "Janki Market, Bhagwanpur",
+        "state": "Bihar",
+        "country": "India",
+        "pinCode": "841424",
+        "contactDetails": "8120363091",
+        "authorizedOwner": "Hanuman Hardware",
+        "gstNumber": "10HQMPS8905R2Z"
+      }
+    }
+  }
+  
