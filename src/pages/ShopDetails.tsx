@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
 import { collection, addDoc, getDocs } from 'firebase/firestore';
 
-// Define the type for shop details
 interface Shop {
   id?: string;
   shopName: string;
@@ -31,10 +30,11 @@ export default function ShopDetails() {
 
   const [errorMessage, setErrorMessage] = useState('');
   const [shops, setShops] = useState<Shop[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Fetch shops from Firestore
   useEffect(() => {
     const fetchShops = async () => {
+      setIsLoading(true);
       try {
         const querySnapshot = await getDocs(collection(db, 'shops'));
         const shopsList = querySnapshot.docs.map((doc) => ({
@@ -45,6 +45,7 @@ export default function ShopDetails() {
       } catch (error) {
         console.error('Error fetching shops:', error);
       }
+      setIsLoading(false);
     };
     fetchShops();
   }, []);
@@ -68,6 +69,7 @@ export default function ShopDetails() {
     }
 
     setErrorMessage('');
+    setIsLoading(true);
 
     try {
       const shopCollectionRef = collection(db, 'shops');
@@ -85,6 +87,7 @@ export default function ShopDetails() {
         gstNumber: '',
       });
 
+      // Re-fetch the list of shops after submission
       const querySnapshot = await getDocs(collection(db, 'shops'));
       const shopsList = querySnapshot.docs.map((doc) => ({
         id: doc.id,
@@ -95,168 +98,98 @@ export default function ShopDetails() {
       console.error('Error adding shop details to Firestore:', error);
       setErrorMessage('Failed to submit shop details.');
     }
+    setIsLoading(false);
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-50">
-      <div className="w-full max-w-4xl p-8 bg-white shadow-lg rounded-lg mb-6">
-        <h2 className="text-3xl font-semibold text-gray-800 mb-4">Shop Details</h2>
-        {errorMessage && (
-          <p className="text-red-500 text-sm mb-4">{errorMessage}</p>
-        )}
+    <div className="min-h-screen bg-gray-50 py-8 px-4">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Existing Shops Section */}
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h2 className="text-3xl font-semibold text-gray-800 mb-6">Shop Details</h2>
+          {errorMessage && (
+            <div className="mb-4 p-4 bg-red-50 rounded-md">
+              <p className="text-red-600 text-base">{errorMessage}</p>
+            </div>
+          )}
 
-        {/* Table to display existing shop details */}
-        <h3 className="text-xl font-semibold text-gray-700 mb-4">Stored Shop Details</h3>
-        <div className="overflow-x-auto bg-white shadow-lg rounded-lg">
-          <table className="min-w-full table-auto divide-y divide-gray-200">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">Shop Name</th>
-                <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">Address</th>
-                <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">State</th>
-                <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">Country</th>
-                <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">Pin Code</th>
-                <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">Contact Details</th>
-                <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">Authorized Owner</th>
-                <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">GST Number</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {shops.map((shop) => (
-                <tr key={shop.id}>
-                  <td className="px-4 py-2 text-sm text-gray-800">{shop.shopName}</td>
-                  <td className='px-4 py-2 text-sm text-gray-800'>{shop.email}</td>
-                  <td className="px-4 py-2 text-sm text-gray-800">{shop.address}</td>
-                  <td className="px-4 py-2 text-sm text-gray-800">{shop.state}</td>
-                  <td className="px-4 py-2 text-sm text-gray-800">{shop.country}</td>
-                  <td className="px-4 py-2 text-sm text-gray-800">{shop.pinCode}</td>
-                  <td className="px-4 py-2 text-sm text-gray-800">{shop.contactDetails}</td>
-                  <td className="px-4 py-2 text-sm text-gray-800">{shop.authorizedOwner}</td>
-                  <td className="px-4 py-2 text-sm text-gray-800">{shop.gstNumber}</td>
-                </tr>
+          <div className="overflow-hidden rounded-lg border border-gray-200">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-blue-600">
+                  <tr>
+                    {['Shop Name', 'Shop Email', 'Address', 'State', 'Country', 'Pin Code', 'Contact Details', 'Authorized Owner', 'GST Number'].map((header) => (
+                      <th key={header} className="px-6 py-4 text-left text-base font-medium text-white uppercase tracking-wider">
+                        {header}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {shops.map((shop) => (
+                    <tr key={shop.id} className="hover:bg-gray-50">
+                      {Object.entries(shop)
+                        .filter(([key]) => key !== 'id')
+                        .map(([key, value]) => (
+                          <td key={key} className="px-6 py-4 whitespace-nowrap text-base text-gray-700">
+                            {value}
+                          </td>
+                        ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {/* Add New Shop Form */}
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h2 className="text-3xl font-semibold text-gray-800 mb-6">Add New Shop</h2>
+          <form onSubmit={handleSubmit} className="max-w-3xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {Object.keys(shopDetails).map((field) => (
+                <div key={field} className="space-y-2">
+                  <label 
+                    htmlFor={field}
+                    className="block text-lg font-medium text-gray-700"
+                  >
+                    {field.replace(/([A-Z])/g, ' $1').trim()}
+                  </label>
+                  <input
+                    type="text"
+                    id={field}
+                    name={field}
+                    value={shopDetails[field as keyof Shop]}
+                    onChange={handleChange}
+                    className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base py-3 px-4 ${
+                      errorMessage && (shopDetails[field as keyof Shop] ?? '').trim() === ''
+                        ? 'border-red-500'
+                        : ''
+                    }`}
+                    required
+                  />
+                  {errorMessage && shopDetails[field as keyof Shop]?.trim() === '' && (
+                    <p className="text-sm text-red-600">This field is required</p>
+                  )}
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+
+            <div className="mt-8">
+              <button
+                type="submit"
+                className={`w-full md:w-auto px-8 py-4 text-lg ${
+                  isLoading ? 'bg-gray-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+                } text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors`}
+                disabled={isLoading}
+              >
+                {isLoading ? 'Submitting...' : 'Submit'}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
-
-      {/* Form to add new shop details */}
-      {/* <form onSubmit={handleSubmit} className="w-full max-w-lg p-8 bg-white shadow-lg rounded-lg">
-        <h2 className="text-3xl font-semibold text-gray-800 mb-6">Add New Shop</h2>
-
-        <div className="space-y-6">
-          <div className="form-group">
-            <label htmlFor="shopName" className="block text-sm font-medium text-gray-700">Shop Name</label>
-            <input
-              type="text"
-              id="shopName"
-              name="shopName"
-              value={shopDetails.shopName}
-              onChange={handleChange}
-              className="w-full p-3 border border-gray-300 rounded-lg mt-1"
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="address" className="block text-sm font-medium text-gray-700">Address</label>
-            <input
-              type="text"
-              id="address"
-              name="address"
-              value={shopDetails.address}
-              onChange={handleChange}
-              className="w-full p-3 border border-gray-300 rounded-lg mt-1"
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="state" className="block text-sm font-medium text-gray-700">State</label>
-            <input
-              type="text"
-              id="state"
-              name="state"
-              value={shopDetails.state}
-              onChange={handleChange}
-              className="w-full p-3 border border-gray-300 rounded-lg mt-1"
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="country" className="block text-sm font-medium text-gray-700">Country</label>
-            <input
-              type="text"
-              id="country"
-              name="country"
-              value={shopDetails.country}
-              onChange={handleChange}
-              className="w-full p-3 border border-gray-300 rounded-lg mt-1"
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="pinCode" className="block text-sm font-medium text-gray-700">Pin Code</label>
-            <input
-              type="text"
-              id="pinCode"
-              name="pinCode"
-              value={shopDetails.pinCode}
-              onChange={handleChange}
-              className="w-full p-3 border border-gray-300 rounded-lg mt-1"
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="contactDetails" className="block text-sm font-medium text-gray-700">Contact Details</label>
-            <input
-              type="text"
-              id="contactDetails"
-              name="contactDetails"
-              value={shopDetails.contactDetails}
-              onChange={handleChange}
-              className="w-full p-3 border border-gray-300 rounded-lg mt-1"
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="authorizedOwner" className="block text-sm font-medium text-gray-700">Authorized Owner</label>
-            <input
-              type="text"
-              id="authorizedOwner"
-              name="authorizedOwner"
-              value={shopDetails.authorizedOwner}
-              onChange={handleChange}
-              className="w-full p-3 border border-gray-300 rounded-lg mt-1"
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="gstNumber" className="block text-sm font-medium text-gray-700">GST Number</label>
-            <input
-              type="text"
-              id="gstNumber"
-              name="gstNumber"
-              value={shopDetails.gstNumber}
-              onChange={handleChange}
-              className="w-full p-3 border border-gray-300 rounded-lg mt-1"
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="w-full py-3 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-          >
-            Submit
-          </button>
-        </div>
-      </form> */}
     </div>
   );
 }

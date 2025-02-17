@@ -2,17 +2,17 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
-import Products from './pages/Products';
 import Sales from './pages/Sales';
-import NewSale from './pages/NewSale';
 import CustomerManagement from './pages/CustomerManagement';
 import React from 'react';
 import CustomerDetails from './pages/CustomerDetails';
-import BillingPage from './pages/BillingPage';
 import ShopDetails from './pages/ShopDetails';
-import PrintBillPage from './pages/PrintBillPage';
-import BillDetails from './pages/BillDetails';
-
+import PurchaseOrder from './pages/Purchaseorder';
+import StockDetailsPage from './pages/StockDetailsPage';
+import AddProduct from './pages/AddProduct';
+import CustomerSalesPage from './pages/CustomerSalesPage';
+import PrintBill from './pages/PrintBill';
+import LowStockPage from './pages/LowStockPage';
 function App() {
   return (
     <BrowserRouter>
@@ -20,19 +20,27 @@ function App() {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
-          <Route path="products" element={<Products />} />
           <Route path="sales" element={<Sales />} />
-          <Route path="sales/new" element={<NewSale />} />
           <Route path="/customers" element={<CustomerManagement />} />
           <Route path="customers/:id" element={<CustomerDetails />} />
           <Route path="/customers/new/edit" element={<CustomerDetails />} />
-          <Route path="/customers/:id" element={<CustomerDetails />} />
           <Route path="/customers/:id/edit" element={<CustomerDetails />} />
-          <Route path="/billing" element={<BillingPage />} />
-          {/* <Route path="/firm-details" element={<ShopDetails />} /> Updated the path */}
-          <Route path="/" element={<BillingPage />} />
-          <Route path="/print-bill" element={<PrintBillPage />} />
-          <Route path="/bill/:saleId" element={<BillDetails />} /> {/* This route for displaying bills */}
+          <Route path="/sales" element={<Sales />} />
+          <Route path="/firm-details" element={<ShopDetails />} />
+          <Route path="/print-bill" element={<PrintBill />} />
+          
+          {/* Customer List Page route */}
+          <Route path="/customer-sales" element={<CustomerSalesPage />} />
+          <Route path="/customer/:id" element={<CustomerDetails />} />
+          {/* <Route path="/customer-bill/:customerId" element={<CustomerBill />} />
+
+          <Route path="/edit-customer/:customerId" element={<CustomerBill />} /> */}
+
+          {/* Add the PurchaseOrder route */}
+          <Route path="/purchase-order" element={<PurchaseOrder />} />
+          <Route path='/stocks' element={<StockDetailsPage />} />
+          <Route path='/add-product' element={<AddProduct />} />
+          <Route path="/low-stock-products" element={<LowStockPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

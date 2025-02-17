@@ -2,11 +2,29 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../lib/firebase';
 import { collection, getDocs } from 'firebase/firestore';
+import { PlusCircle, Edit2, ShoppingCart, Eye } from 'lucide-react';
 
 export default function CustomerManagement() {
   const navigate = useNavigate();
   const [customers, setCustomers] = useState<any[]>([]);
-  const [salesData, setSalesData] = useState<{ [key: string]: number }>({});
+  const [salesData, setSalesData] = useState<{ [key: string]: any[] }>({});
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Create a filteredCustomers array based on the search term and sort them by name
+  const filteredCustomers = customers
+    .filter(customer => {
+      const customerName = customer.name ? customer.name.toLowerCase() : '';
+      const search = searchTerm.toLowerCase();
+      return customerName.includes(search);
+    })
+    .sort((a, b) => {
+      // Sort customers by name (case-insensitive)
+      const nameA = a.name.toLowerCase();
+      const nameB = b.name.toLowerCase();
+      if (nameA < nameB) return -1;
+      if (nameA > nameB) return 1;
+      return 0;
+    });
 
   // Fetch customers from Firestore
   useEffect(() => {
@@ -27,31 +45,40 @@ export default function CustomerManagement() {
     fetchCustomers();
   }, []);
 
-  // Fetch sales data from Firestore
+  // Fetch sales history data for each customer from Firestore based on CustomerNo
   useEffect(() => {
-    const fetchSales = async () => {
+    const fetchSalesHistory = async () => {
       try {
         const salesCollection = collection(db, 'sales');
         const salesSnapshot = await getDocs(salesCollection);
 
-        const salesMap: { [key: string]: number } = {};
+        // Initialize an object to hold sales for each customer by CustomerNo
+        const salesMap: { [key: string]: any[] } = {};
+
+        // Iterate through the sales data and group them by CustomerNo
         salesSnapshot.docs.forEach((doc) => {
           const sale = doc.data();
-          const { customerId, paid, duesAmount } = sale;
+          const { customerNo, paidAmount, dueAmount, saleDate } = sale;
 
-          if (!salesMap[customerId]) {
-            salesMap[customerId] = 0;
+          if (!salesMap[customerNo]) {
+            salesMap[customerNo] = [];
           }
-          salesMap[customerId] += paid + duesAmount;
+
+          salesMap[customerNo].push({
+            saleId: doc.id,
+            paidAmount,
+            dueAmount,
+            saleDate: saleDate.toDate().toLocaleDateString(), // Convert Firestore timestamp to a human-readable date
+          });
         });
 
         setSalesData(salesMap);
       } catch (error) {
-        console.error('Error fetching sales:', error);
+        console.error('Error fetching sales data:', error);
       }
     };
 
-    fetchSales();
+    fetchSalesHistory();
   }, []);
 
   const handleEdit = (id: string) => {
@@ -59,7 +86,7 @@ export default function CustomerManagement() {
   };
 
   const handleSale = (id: string) => {
-    navigate(`/billing?customerId=${id}`);
+    navigate(`/sales?customerId=${id}`);
   };
 
   const viewDetails = (id: string) => {
@@ -71,58 +98,93 @@ export default function CustomerManagement() {
   };
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Customer Management</h1>
-      <button
-        onClick={addCustomer}
-        className="bg-blue-500 text-white px-4 py-2 rounded mb-4"
-      >
-        Add Customer
-      </button>
-      <table className="min-w-full bg-white border border-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="px-4 py-2 border">Customer No.</th>
-            <th className="px-4 py-2 border">Customer Name</th>
-            <th className="px-4 py-2 border">Address</th>
-            <th className="px-4 py-2 border">Mobile No.</th>
-            <th className="px-4 py-2 border">Total Sales (₹)</th>
-            <th className="px-4 py-2 border">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {customers.map((customer) => (
-            <tr key={customer.id} className="hover:bg-gray-100">
-              <td className="px-4 py-2 border">{customer.customerNo}</td>
-              <td
-                className="px-4 py-2 border text-blue-600 cursor-pointer"
-                onClick={() => viewDetails(customer.id)}
-              >
-                {customer.name}
-              </td>
-              <td className="px-4 py-2 border">{customer.address}</td>
-              <td className="px-4 py-2 border">{customer.mobile}</td>
-              <td className="px-4 py-2 border">
-                ₹{salesData[customer.id]?.toFixed(2) || '0.00'}
-              </td>
-              <td className="px-4 py-2 border space-x-2">
-                <button
-                  onClick={() => handleEdit(customer.id)}
-                  className="bg-indigo-500 text-white px-4 py-2 rounded"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleSale(customer.id)}
-                  className="bg-green-500 text-white px-4 py-2 rounded"
-                >
-                  Sale
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="p-6 max-w-7xl mx-auto">
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Customer Management</h1>
+          <p className="mt-2 text-sm text-gray-600">Manage your customers and their sales history</p>
+        </div>
+        <button
+          onClick={addCustomer}
+          className="inline-flex items-center px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors duration-200"
+        >
+          <PlusCircle className="w-5 h-5 mr-2" />
+          Add Customer
+        </button>
+      </div>
+
+      {/* Search Bar */}
+      <div className="mb-6">
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Search by customer name..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full table-auto">
+            <thead className="bg-indigo-600 text-white">
+              <tr>
+                <th className="px-6 py-4 text-left text-sm font-medium">Customer No</th>
+                <th className="px-6 py-4 text-left text-sm font-medium">Name</th>
+                <th className="px-6 py-4 text-left text-sm font-medium">Address</th>
+                <th className="px-6 py-4 text-left text-sm font-medium">Mobile</th>
+                <th className="px-6 py-4 text-left text-sm font-medium">Total Sales</th>
+                <th className="px-6 py-4 text-right text-sm font-medium">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredCustomers.map((customer) => (
+                <tr key={customer.id} className="hover:bg-gray-50 transition-colors duration-150">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                    {customer.customerNo}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <button
+                      onClick={() => viewDetails(customer.id)}
+                      className="text-sm text-indigo-600 hover:text-indigo-900 font-medium inline-flex items-center space-x-1"
+                    >
+                      <span>{customer.name}</span> {/* Ensure this is 'name' */}
+                      <Eye className="w-4 h-4 opacity-70" />
+                    </button>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    {customer.address}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    {customer.mobile}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    ₹{(salesData[customer.customerNo]?.reduce((total, sale) => total + sale.paidAmount, 0) || 0).toFixed(2)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm space-x-3">
+                    <button
+                      onClick={() => handleEdit(customer.id)}
+                      className="inline-flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors duration-200"
+                    >
+                      <Edit2 className="w-4 h-4 mr-2" />
+                      <span>Edit</span>
+                    </button>
+                    <button
+                      onClick={() => handleSale(customer.id)}
+                      className="inline-flex items-center px-4 py-2 bg-green-100 hover:bg-green-200 text-green-700 text-sm font-medium rounded-lg transition-colors duration-200"
+                    >
+                      <ShoppingCart className="w-4 h-4 mr-2" />
+                      <span>Sale</span>
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
