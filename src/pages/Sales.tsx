@@ -32,7 +32,7 @@ const SalesPage = () => {
 
   const [stocks, setStocks] = useState<Stock[]>([]);
   const [productsInSale, setProductsInSale] = useState([
-    { productId: '', productName: '', quantity: 1, totalAmount: 0, maxQuantity: 0, unit: '', brand: '', error: '' },
+    { productId: '', productName: '', quantity: 1, totalAmount: 0, maxQuantity: 0, unit: '', brand: '', nos: '', error: '' },
   ]);
   const [paidAmount, setPaidAmount] = useState(0);
   const [dueAmount, setDueAmount] = useState(0);
@@ -181,8 +181,11 @@ const SalesPage = () => {
 
   const addProductRow = () => {
     setProductsInSale([
-      ...productsInSale,
-      { productId: '', productName: '', quantity: 1, totalAmount: 0, maxQuantity: 0, nos: '', brand: '', error: '' },
+      ...productsInSale.map(product => ({ ...product, nos: product.nos || '' })),
+      {
+        productId: '', productName: '', quantity: 1, totalAmount: 0, maxQuantity: 0, unit: '', brand: '', error: '',
+        nos: ''
+      },
     ]);
   };
 
@@ -190,8 +193,7 @@ const SalesPage = () => {
     setSelectedCustomer(null);
     setProductsInSale([
       {
-        productId: '', quantity: 1, totalAmount: 0, maxQuantity: 0, nos: '', brand: '', error: '',
-        productName: ''
+        productId: '', productName: '', quantity: 1, totalAmount: 0, maxQuantity: 0, unit: '', brand: '', nos: '', error: ''
       },
     ]);
     setPaidAmount(0);
