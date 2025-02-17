@@ -6,11 +6,14 @@ import React, { useState } from 'react';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: <Home className="w-5 h-5" /> },
-  { name: 'Billing Management', href: '/customer-sales', icon: <ShoppingBag className="w-5 h-5" /> },
+  {name: 'Add New Customers', href: '/customers/new/edit', icon: <Users className="w-5 h-5" /> },
   { name: 'Sales', href: '/sales', icon: <DollarSign className="w-5 h-5" /> },
+  { name: 'Billing Management', href: '/customer-sales', icon: <ShoppingBag className="w-5 h-5" /> },
   { name: 'Customer Management', href: '/customers', icon: <Users className="w-5 h-5" /> },
-  { name: 'Shop Details', href: '/firm-details', icon: <Store className="w-5 h-5" /> },
+  // { name: 'Shop Details', href: '/firm-details', icon: <Store className="w-5 h-5" /> },
   { name: 'Stocks', href: '/stocks', icon: <Box className="w-5 h-5" /> },
+  { name: 'Payment Method', href: '/payment-method', icon: <DollarSign className="w-5 h-5" /> },
+  
 ];
 
 export default function Layout() {
@@ -133,10 +136,11 @@ export default function Layout() {
                 { path: '/add-product', name: 'Add Product', icon: <ShoppingBag className="w-5 h-5" /> },
                 { path: '/add-sale', name: 'Add Sale', icon: <DollarSign className="w-5 h-5" /> },
                 {path: '/purchase-order', name: 'Update Stocks', icon: <Box className="w-5 h-5" /> },
+                {name: 'Add New Customers', href: '/customers/new/edit', icon: <Users className="w-5 h-5" /> }
               ].map((item) => (
                 <Link
                   key={item.path}
-                  to={item.path}
+                  to={item.path ?? ''}
                   className="flex items-center px-4 py-3 text-gray-700 hover:bg-indigo-50 transition-colors"
                   onClick={() => setMenuOpen(false)}
                 >

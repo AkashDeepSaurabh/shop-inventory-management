@@ -13,6 +13,7 @@ import AddProduct from './pages/AddProduct';
 import CustomerSalesPage from './pages/CustomerSalesPage';
 import PrintBill from './pages/PrintBill';
 import LowStockPage from './pages/LowStockPage';
+import PaymentMethodPage from './pages/PaymentMethodPage';
 function App() {
   return (
     <BrowserRouter>
@@ -32,15 +33,15 @@ function App() {
           {/* Customer List Page route */}
           <Route path="/customer-sales" element={<CustomerSalesPage />} />
           <Route path="/customer/:id" element={<CustomerDetails />} />
-          {/* <Route path="/customer-bill/:customerId" element={<CustomerBill />} />
-
-          <Route path="/edit-customer/:customerId" element={<CustomerBill />} /> */}
 
           {/* Add the PurchaseOrder route */}
           <Route path="/purchase-order" element={<PurchaseOrder />} />
           <Route path='/stocks' element={<StockDetailsPage />} />
           <Route path='/add-product' element={<AddProduct />} />
           <Route path="/low-stock-products" element={<LowStockPage />} />
+
+          {/* Add the Payment method route */}
+          <Route path="/payment-method" element={<PaymentMethodPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

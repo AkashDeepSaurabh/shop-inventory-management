@@ -27,6 +27,7 @@ const SalesPage = () => {
     sellingPrice: number;
     productUnit: string;
     brand: string;
+    nos: string;
   }
 
   const [stocks, setStocks] = useState<Stock[]>([]);
@@ -79,6 +80,7 @@ const SalesPage = () => {
           sellingPrice: data.sellingPrice,
           productUnit: data.productUnit,
           brand: data.brand,
+          nos: data.nos,
         };
       });
       setStocks(stocksData);
@@ -180,7 +182,7 @@ const SalesPage = () => {
   const addProductRow = () => {
     setProductsInSale([
       ...productsInSale,
-      { productId: '', productName: '', quantity: 1, totalAmount: 0, maxQuantity: 0, unit: '', brand: '', error: '' },
+      { productId: '', productName: '', quantity: 1, totalAmount: 0, maxQuantity: 0, nos: '', brand: '', error: '' },
     ]);
   };
 
@@ -188,7 +190,7 @@ const SalesPage = () => {
     setSelectedCustomer(null);
     setProductsInSale([
       {
-        productId: '', quantity: 1, totalAmount: 0, maxQuantity: 0, unit: '', brand: '', error: '',
+        productId: '', quantity: 1, totalAmount: 0, maxQuantity: 0, nos: '', brand: '', error: '',
         productName: ''
       },
     ]);
@@ -278,7 +280,7 @@ const SalesPage = () => {
 
   const productOptions = stocks.map((stock) => ({
     value: stock.id,
-    label: `${stock.productName} - ${stock.brand} (NOS: ${stock.quantity})`,
+    label: `${stock.productName} - ${stock.brand} (NOS: ${stock.nos})`,
   }));
 
   const customerOptions = customers.map((customer) => ({
@@ -402,7 +404,7 @@ const SalesPage = () => {
               }`}
               disabled={!isFormValid()}
             >
-              Confirm Sale
+              Proceed to Pay
             </button>
 
             <button
