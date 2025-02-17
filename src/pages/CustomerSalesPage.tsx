@@ -103,13 +103,19 @@ const CustomerSalesPage: React.FC = () => {
     }).format(amount);
   };
 
-
   const handlePrintBill = (customerNo: string, saleId?: string) => {
-    // Navigate to the print bill page with customerNo and optionally saleId
-    const url = saleId ? `/print-bill?customerNo=${customerNo}&saleId=${saleId}` : `/print-bill?customerNo=${customerNo}`;
-    navigate(url); // Navigate to the print bill page
+    if (saleId) {
+      // Print individual sale bill
+      navigate(`/print-bill?customerNo=${customerNo}&saleId=${saleId}`);
+    } else {
+      // Print all sales bills for the customer
+      const customer = customers.find(c => c.customerNo === customerNo);
+      if (customer && customer.sales.length > 0) {
+        const saleIds = customer.sales.map(sale => sale.saleId).join(',');
+        navigate(`/print-bill?customerNo=${customerNo}&saleIds=${saleIds}`);
+      }
+    }
   };
-  
 
   if (loading) {
     return (
@@ -153,7 +159,16 @@ const CustomerSalesPage: React.FC = () => {
               <tbody className="divide-y divide-gray-200">
                 {customers.map((customer) => (
                   <React.Fragment key={customer.customerNo}>
-                    <tr className="hover:bg-gray-50 transition-colors">
+                    <tr 
+                      className="hover:bg-gray-50 transition-colors cursor-pointer"
+                      onClick={() => {
+                        const updatedCustomers = customers.map((c) => ({
+                          ...c,
+                          isOpen: c.customerNo === customer.customerNo ? !c.isOpen : c.isOpen
+                        }));
+                        setCustomers(updatedCustomers);
+                      }}
+                    >
                       <td className="px-6 py-4">
                         <div className="text-sm font-medium text-gray-900">{customer.customerName}</div>
                         <div className="text-sm text-gray-500">#{customer.customerNo}</div>
@@ -178,7 +193,8 @@ const CustomerSalesPage: React.FC = () => {
                       <td className="px-6 py-4 text-center">
                         <div className="flex justify-center space-x-3">
                           <button
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               const updatedCustomers = customers.map((c) => ({
                                 ...c,
                                 isOpen: c.customerNo === customer.customerNo ? !c.isOpen : c.isOpen
@@ -193,8 +209,12 @@ const CustomerSalesPage: React.FC = () => {
                             }
                           </button>
                           <button
-                            onClick={() => handlePrintBill(customer.customerNo)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePrintBill(customer.customerNo);
+                            }}
                             className="text-indigo-600 hover:text-indigo-900 transition-colors"
+                            title="Print all sales bills"
                           >
                             <Printer className="h-5 w-5" />
                           </button>
@@ -224,8 +244,12 @@ const CustomerSalesPage: React.FC = () => {
                                     <td className="px-4 py-3 text-sm text-gray-500">{formatDate(sale.saleDate)}</td>
                                     <td className="px-4 py-3 text-center">
                                       <button
-                                        onClick={() => handlePrintBill(customer.customerNo, sale.saleId)}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handlePrintBill(customer.customerNo, sale.saleId);
+                                        }}
                                         className="text-indigo-600 hover:text-indigo-900 transition-colors"
+                                        title="Print individual sale bill"
                                       >
                                         <Printer className="h-4 w-4 inline" />
                                       </button>

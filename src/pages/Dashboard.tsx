@@ -1,24 +1,32 @@
 import { useState, useEffect } from 'react';
-import { Product, Sale } from '../types';
-import { db } from '../lib/firebase';
-import { collection, getDocs } from 'firebase/firestore';
-import { format } from 'date-fns';
-import { Line } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
+import { Link } from 'react-router-dom';
+import { 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
   Legend,
-} from 'chart.js';
+  ResponsiveContainer 
+} from 'recharts';
+import {
+  Box, 
+  ShoppingCart, 
+  Users, 
+  FileText, 
+  DollarSign, 
+  ShoppingBag,
+  Plus,
+  X,
+  AlertTriangle
+} from 'lucide-react';
+import { format, subDays, startOfYear, isWithinInterval, startOfMonth } from 'date-fns';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import React from 'react';
-import { ChevronDown, ChevronUp, Printer, Eye, EyeOff, PlusIcon, Box, ShoppingCart, Users, FileText, DollarSign, ShoppingBag } from 'lucide-react';
-import { Link } from 'react-router-dom'; // Import Link from react-router-dom
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+// Interfaces
 
 interface Shop {
   id?: string;
@@ -30,127 +38,251 @@ interface Shop {
   contactDetails: string;
   authorizedOwner: string;
   gstNumber: string;
+
 }
 
+const TimeFrameSelector = ({ selected, onChange }) => (
+  <div className="flex space-x-2 mb-4">
+    {['Daily', 'Monthly', 'Yearly'].map((timeframe) => (
+      <button
+        key={timeframe}
+        onClick={() => onChange(timeframe)}
+        className={`px-4 py-2 rounded-lg transition-all ${
+          selected === timeframe
+            ? 'bg-indigo-600 text-white'
+            : 'bg-white text-gray-600 hover:bg-indigo-50'
+        }`}
+      >
+        {timeframe}
+      </button>
+    ))}
+  </div>
+);
+
 export default function Dashboard() {
-  const [totalProducts, setTotalProducts] = useState(0);
-  const [totalSales, setTotalSales] = useState(0);
-  const [lowStock, setLowStock] = useState<Product[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [salesData, setSalesData] = useState<Sale[]>([]);
-  const [shops, setShops] = useState<Shop[]>([]);
-  const [showSales, setShowSales] = useState(true); // For toggling between sales/profit view
-  const [menuOpen, setMenuOpen] = useState(false); // To toggle the dropdown menu visibility
+  interface Product {
+    id: string;
+    name: string;
+    quantity: number;
+    minimumRequired: number;
+    sellPrice: number;
+    purchasePrice: number;
+  }
+  
+  interface Sale {
+    id: string;
+    date: Date;
+    items: {
+      quantity: number;
+      sellPrice: number;
+      purchasePrice: number;
+    }[];
+  }
+  
+  const [dashboardData, setDashboardData] = useState<{
+    products: Product[];
+    sales: Sale[];
+    shops: Shop[];
+    lowStockProducts: Product[];
+    totalProducts: number;
+    totalSales: number;
+  }>({
+    products: [],
+    sales: [],
+    shops: [],
+    lowStockProducts: [],
+    totalProducts: 0,
+    totalSales: 0
+  });
+  
+  const [timeframe, setTimeframe] = useState('Monthly');
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Fetching products, sales data, and shop details from Firestore
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchDashboardData = async () => {
       try {
-        setProducts([]);
-        setSalesData([]);
-        setTotalProducts(products.length);
-        setTotalSales(
-          salesData.reduce((acc, sale) => {
-            return acc + sale.items.reduce((sum, item) => sum + item.quantity * item.sellPrice, 0);
-          }, 0)
-        );
-        setLowStock(products.filter((p) => p.quantity < 10));
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
+        setIsLoading(true);
+        setError(null);
 
-    const fetchShops = async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, 'shops'));
-        const shopList = querySnapshot.docs.map((doc) => ({
+        // Fetch low stock products
+        const lowStockSnapshot = await getDocs(collection(db, 'low-stock-products'));
+        const lowStockData = lowStockSnapshot.docs.map(doc => ({
           id: doc.id,
-          ...doc.data(),
-        })) as Shop[];
-        setShops(shopList);
+          name: doc.data().name,
+          quantity: doc.data().quantity,
+          minimumRequired: doc.data().minimumRequired,
+          sellPrice: doc.data().sellPrice,
+          purchasePrice: doc.data().purchasePrice
+        }));
+
+        // Fetch other data...
+        const [productsSnapshot, salesSnapshot, shopsSnapshot] = await Promise.all([
+          getDocs(collection(db, 'products')),
+          getDocs(collection(db, 'sales')),
+          getDocs(collection(db, 'shops'))
+        ]);
+
+        const productsData = productsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          name: doc.data().name,
+          quantity: doc.data().quantity,
+          minimumRequired: doc.data().minimumRequired,
+          sellPrice: doc.data().sellPrice,
+          purchasePrice: doc.data().purchasePrice
+        }));
+
+        const salesData = salesSnapshot.docs.map(doc => ({
+          id: doc.id,
+          date: doc.data().date?.toDate() || new Date(),
+          items: doc.data().items || []
+        }));
+
+        const shopsData = shopsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          shopName: doc.data().shopName,
+          address: doc.data().address,
+          state: doc.data().state,
+          country: doc.data().country,
+          pinCode: doc.data().pinCode,
+          contactDetails: doc.data().contactDetails,
+          authorizedOwner: doc.data().authorizedOwner,
+          gstNumber: doc.data().gstNumber
+        }));
+
+        setDashboardData({
+          products: productsData,
+          sales: salesData,
+          shops: shopsData,
+          lowStockProducts: lowStockData,
+          totalProducts: productsData.length,
+          totalSales: calculateTotalSales(salesData)
+        });
       } catch (error) {
-        console.error('Error fetching shop details:', error);
+        console.error('Error fetching dashboard data:', error);
+        setError('Failed to load dashboard data');
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    fetchData();
-    fetchShops();
-  }, [products, salesData]);
+    fetchDashboardData();
+  }, []);
 
-  // Chart data for sales or profit overview
-  const getChartData = (salesData: Sale[], label: string) => {
-    const salesGroupedByMonth = salesData.reduce((acc, sale) => {
-      const month = format(sale.date, 'MMM yyyy');
-      const saleAmount = sale.items.reduce((sum, item) => sum + item.quantity * item.sellPrice, 0);
+  const calculateTotalSales = (sales) => {
+    return sales.reduce((acc, sale) => {
+      return acc + (sale.items?.reduce((sum, item) => 
+        sum + (item.quantity * item.sellPrice), 0) || 0);
+    }, 0);
+  };
 
-      if (!acc[month]) acc[month] = { sales: 0, profit: 0 };
-      acc[month].sales += saleAmount;
+  const getFilteredData = (sales, timeframe) => {
+    const now = new Date();
+    const filtered = sales.filter(sale => {
+      const saleDate = new Date(sale.date);
+      switch (timeframe) {
+        case 'Daily':
+          return isWithinInterval(saleDate, {
+            start: subDays(now, 30),
+            end: now
+          });
+        case 'Monthly':
+          return isWithinInterval(saleDate, {
+            start: startOfMonth(subDays(now, 365)),
+            end: now
+          });
+        case 'Yearly':
+          return isWithinInterval(saleDate, {
+            start: startOfYear(subDays(now, 1095)), // 3 years
+            end: now
+          });
+        default:
+          return true;
+      }
+    });
 
-      sale.items.forEach((item) => {
-        const purchaseAmount = item.quantity * item.purchasePrice;
-        acc[month].profit += saleAmount - purchaseAmount;
+    return aggregateData(filtered, timeframe);
+  };
+
+  const aggregateData = (sales, timeframe) => {
+    const aggregated = sales.reduce((acc, sale) => {
+      const dateKey = format(new Date(sale.date), 
+        timeframe === 'Daily' ? 'MMM dd' :
+        timeframe === 'Monthly' ? 'MMM yyyy' : 'yyyy'
+      );
+
+      if (!acc[dateKey]) {
+        acc[dateKey] = { sales: 0, profit: 0 };
+      }
+
+      sale.items.forEach(item => {
+        const saleAmount = item.quantity * item.sellPrice;
+        const profitAmount = item.quantity * (item.sellPrice - item.purchasePrice);
+        acc[dateKey].sales += saleAmount;
+        acc[dateKey].profit += profitAmount;
       });
 
       return acc;
-    }, {} as Record<string, { sales: number; profit: number }>);
+    }, {});
 
-    const labels = Object.keys(salesGroupedByMonth);
-    const data = label === 'Sales'
-      ? labels.map((key) => salesGroupedByMonth[key].sales)
-      : labels.map((key) => salesGroupedByMonth[key].profit);
-
-    return {
-      labels,
-      datasets: [
-        {
-          label,
-          data,
-          borderColor: label === 'Sales' ? '#3498db' : '#2ecc71', // Colors for Sales and Profit
-          backgroundColor: label === 'Sales' ? 'rgba(52, 152, 219, 0.2)' : 'rgba(46, 204, 113, 0.2)', 
-          tension: 0.4, // Smooth the line
-        },
-      ],
-    };
+    return Object.entries(aggregated).map(([date, data]) => ({
+      date,
+      sales: (data as { sales: number; profit: number }).sales,
+      profit: (data as { sales: number; profit: number }).profit
+    }));
   };
 
-  // Icon mapping based on page name
-  const pageIcons = {
-    'add-product': <Box className="h-5 w-5 mr-2" />,
-    'stocks': <ShoppingBag className="h-5 w-5 mr-2" />,
-    'purchase-order': <FileText className="h-5 w-5 mr-2" />,
-    'customer-sales': <ShoppingCart className="h-5 w-5 mr-2" />,
-    'customers': <Users className="h-5 w-5 mr-2" />,
-    'sales': <DollarSign className="h-5 w-5 mr-2" />,
-  };
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-red-500 text-center">
+          <AlertTriangle className="w-12 h-12 mx-auto mb-4" />
+          <p>{error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const chartData = getFilteredData(dashboardData.sales, timeframe);
 
   return (
-    <div className="space-y-8 relative p-8 bg-gray-50">
-      {/* Shop Details Section */}
-      <div className="overflow-hidden rounded-lg bg-white shadow-xl border-l-4 border-indigo-500 transition-all hover:shadow-2xl hover:scale-105">
-        <div className="p-8">
-          <h3 className="text-xl font-semibold text-indigo-600 transition-colors duration-300">Shop Details</h3>
-          <div className="overflow-x-auto mt-6">
-            <table className="min-w-full table-auto divide-y divide-gray-200">
-              <thead className="bg-gray-100 text-sm font-medium text-gray-600">
-                <tr>
-                  <th className="px-4 py-3 text-left">Shop Name</th>
-                  <th className="px-4 py-3 text-left">Address</th>
-                  <th className="px-4 py-3 text-left">State</th>
-                  <th className="px-4 py-3 text-left">Country</th>
-                  <th className="px-4 py-3 text-left">Pin Code</th>
-                  <th className="px-4 py-3 text-left">Contact</th>
-                  <th className="px-4 py-3 text-left">Owner</th>
-                  <th className="px-4 py-3 text-left">GST Number</th>
+    <div className="p-4 md:p-6 lg:p-8 space-y-6 bg-gray-50 min-h-screen">
+       {/* Shop Details Card */}
+       {dashboardData.shops.length > 0 && (
+      <div className="bg-white rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
+        <div className="p-6">
+          <h2 className="text-xl font-semibold text-indigo-600 mb-4">Shop Details</h2>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead>
+                <tr className="bg-gray-50">
+                  {['Shop Name', 'Address', 'Contact', 'Owner', 'GST Number'].map((header) => (
+                    <th key={header} className="px-4 py-3 text-left text-sm font-medium text-gray-600">
+                      {header}
+                    </th>
+                  ))}
                 </tr>
               </thead>
-              <tbody className="text-sm font-normal text-gray-700">
-                {shops.map((shop) => (
-                  <tr key={shop.id} className="hover:bg-gray-50 transition-all duration-300 hover:bg-indigo-50">
-                    <td className="px-4 py-3">{shop.shopName}</td>
-                    <td className="px-4 py-3">{shop.address}</td>
-                    <td className="px-4 py-3">{shop.state}</td>
-                    <td className="px-4 py-3">{shop.country}</td>
-                    <td className="px-4 py-3">{shop.pinCode}</td>
+              <tbody className="divide-y divide-gray-200">
+                {dashboardData.shops.map((shop) => (
+                  <tr key={shop.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-3 whitespace-nowrap">{shop.shopName}</td>
+                    <td className="px-4 py-3">{`${shop.address}, ${shop.state}, ${shop.country} - ${shop.pinCode}`}</td>
                     <td className="px-4 py-3">{shop.contactDetails}</td>
                     <td className="px-4 py-3">{shop.authorizedOwner}</td>
                     <td className="px-4 py-3">{shop.gstNumber}</td>
@@ -161,87 +293,121 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-
-      {/* Total Products and Sales Overview */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="overflow-hidden rounded-lg bg-white p-6 shadow-lg border-l-4 border-yellow-500 transition-all hover:shadow-2xl hover:scale-105">
-          <dt className="truncate text-sm font-medium text-gray-500">Total Products</dt>
-          <dd className="mt-1 text-4xl font-bold text-gray-900">{totalProducts}</dd>
+      )}
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white rounded-xl p-6 shadow-lg border-l-4 border-indigo-500">
+          <dt className="text-sm font-medium text-gray-500">Total Products</dt>
+          <dd className="mt-2 text-3xl font-bold text-gray-900">
+            {dashboardData.totalProducts.toLocaleString()}
+          </dd>
         </div>
-        <div className="overflow-hidden rounded-lg bg-white p-6 shadow-lg border-l-4 border-green-500 transition-all hover:shadow-2xl hover:scale-105">
-          <dt className="truncate text-sm font-medium text-gray-500">Total Sales</dt>
-          <dd className="mt-1 text-4xl font-bold text-gray-900">{totalSales}</dd>
+        <div className="bg-white rounded-xl p-6 shadow-lg border-l-4 border-emerald-500">
+          <dt className="text-sm font-medium text-gray-500">Total Sales</dt>
+          <dd className="mt-2 text-3xl font-bold text-gray-900">
+            ₹{dashboardData.totalSales.toLocaleString()}
+          </dd>
         </div>
-      </div>
-
-      {/* Graphs Section: Sales and Profit Overview */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2">
-        <div className="overflow-hidden rounded-lg bg-white shadow-lg border-l-4 border-blue-500 transition-all hover:shadow-2xl hover:scale-105">
-          <div className="p-6">
-            <h3 className="text-xl font-semibold text-blue-600 transition-colors duration-300">Sales Overview</h3>
-            {salesData.length > 0 ? (
-              <Line data={getChartData(salesData, 'Sales')} options={{ maintainAspectRatio: false }} />
-            ) : (
-              <p>No sales data available</p>
-            )}
-          </div>
-        </div>
-        <div className="overflow-hidden rounded-lg bg-white shadow-lg border-l-4 border-green-500 transition-all hover:shadow-2xl hover:scale-105">
-          <div className="p-6">
-            <h3 className="text-xl font-semibold text-green-600 transition-colors duration-300">Profit Overview</h3>
-            {salesData.length > 0 ? (
-              <Line data={getChartData(salesData, 'Profit')} options={{ maintainAspectRatio: false }} />
-            ) : (
-              <p>No profit data available</p>
-            )}
-          </div>
+        <div className="bg-white rounded-xl p-6 shadow-lg border-l-4 border-red-500">
+          <dt className="text-sm font-medium text-gray-500">Low Stock Items</dt>
+          <dd className="mt-2 text-3xl font-bold text-gray-900">
+            {dashboardData.lowStockProducts.length}
+          </dd>
         </div>
       </div>
 
-      {/* Floating + Button with Smooth Hover Transition */}
-      <div className="fixed bottom-6 right-6 transition-all duration-300">
-        <button
-          onClick={() => setMenuOpen(!menuOpen)} // Toggle the dropdown menu visibility
-          className="p-4 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 transition-all duration-300"
-        >
-          <PlusIcon className="h-6 w-6" />
-        </button>
-        {menuOpen && (
-          <div className="absolute bottom-16 right-0 bg-white shadow-lg rounded-lg w-48 mt-2 transition-all duration-300">
-            <ul className="text-gray-700">
-              <li>
-                <Link to="/add-product" className="block px-4 py-2 text-gray-700 hover:bg-indigo-600 flex items-center transition-all">
-                  {pageIcons['add-product']} Add Product
-                </Link>
-              </li>
-              <li>
-                <Link to="/stocks" className="block px-4 py-2 text-gray-700 hover:bg-indigo-600 flex items-center transition-all">
-                  {pageIcons['stocks']} Stocks
-                </Link>
-              </li>
-              <li>
-                <Link to="/purchase-order" className="block px-4 py-2 text-gray-700 hover:bg-indigo-600 flex items-center transition-all">
-                  {pageIcons['purchase-order']} Purchase Order
-                </Link>
-              </li>
-              <li>
-                <Link to="/customer-sales" className="block px-4 py-2 text-gray-700 hover:bg-indigo-600 flex items-center transition-all">
-                  {pageIcons['customer-sales']} Customer Sales
-                </Link>
-              </li>
-              <li>
-                <Link to="/customers" className="block px-4 py-2 text-gray-700 hover:bg-indigo-600 flex items-center transition-all">
-                  {pageIcons['customers']} Customers
-                </Link>
-              </li>
-              <li>
-                <Link to="/sales" className="block px-4 py-2 text-gray-700 hover:bg-indigo-600 flex items-center transition-all">
-                  {pageIcons['sales']} Sales
-                </Link>
-              </li>
-            </ul>
+      {/* Low Stock Products */}
+      <div className="bg-white rounded-xl shadow-lg p-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Low Stock Products</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Current Stock</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Minimum Required</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {dashboardData.lowStockProducts.map((product) => (
+                <tr key={product.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {product.name}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {product.quantity}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {product.minimumRequired}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      product.quantity === 0
+                        ? 'bg-red-100 text-red-800'
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {product.quantity === 0 ? 'Out of Stock' : 'Low Stock'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Sales and Profit Charts */}
+      <div className="space-y-6">
+        <TimeFrameSelector selected={timeframe} onChange={setTimeframe} />
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Sales Chart */}
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">Sales Overview</h3>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line 
+                    type="monotone" 
+                    dataKey="sales" 
+                    stroke="#4F46E5" 
+                    name="Sales"
+                    strokeWidth={2}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-        )}
+
+          {/* Profit Chart */}
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">Profit Overview</h3>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line 
+                    type="monotone" 
+                    dataKey="profit" 
+                    stroke="#10B981" 
+                    name="Profit"
+                    strokeWidth={2}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -24,11 +24,13 @@
     "react-icons": "^5.4.0",
     "react-router-dom": "^6.21.3",
     "react-select": "^5.9.0",
+    "recharts": "^2.15.1",
     "tailwind-rn": "^4.2.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
+    "@types/recharts": "^1.8.29",
     "@typescript-eslint/eslint-plugin": "^6.14.0",
     "@typescript-eslint/parser": "^6.14.0",
     "@vitejs/plugin-react": "^4.2.1",
