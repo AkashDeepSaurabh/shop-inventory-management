@@ -7,9 +7,29 @@ import Select from 'react-select';
 
 const SalesPage = () => {
   const [saleId, setSaleId] = useState<string>('');
-  const [customers, setCustomers] = useState([]);
-  const [selectedCustomer, setSelectedCustomer] = useState(null);
-  const [stocks, setStocks] = useState([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  interface Customer {
+    id: string;
+    name: string;
+    customerNo: string;
+    mobile: string;
+    email?: string;
+    address?: string;
+    country?: string;
+    state?: string;
+  }
+  
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  interface Stock {
+    id: string;
+    productName: string;
+    quantity: number;
+    sellingPrice: number;
+    productUnit: string;
+    brand: string;
+  }
+
+  const [stocks, setStocks] = useState<Stock[]>([]);
   const [productsInSale, setProductsInSale] = useState([
     { productId: '', productName: '', quantity: 1, totalAmount: 0, maxQuantity: 0, unit: '', brand: '', error: '' },
   ]);
@@ -27,10 +47,19 @@ const SalesPage = () => {
   const fetchCustomers = async () => {
     try {
       const querySnapshot = await getDocs(collection(db, 'customers'));
-      const customersData = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      const customersData = querySnapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          name: data.name,
+          customerNo: data.customerNo,
+          mobile: data.mobile,
+          email: data.email,
+          address: data.address,
+          country: data.country,
+          state: data.state,
+        };
+      });
       setCustomers(customersData);
     } catch (error) {
       console.error('Error fetching customers:', error);
@@ -41,10 +70,17 @@ const SalesPage = () => {
   const fetchStocks = async () => {
     try {
       const querySnapshot = await getDocs(collection(db, 'purchasedStocks'));
-      const stocksData = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      const stocksData = querySnapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          productName: data.productName,
+          quantity: data.quantity,
+          sellingPrice: data.sellingPrice,
+          productUnit: data.productUnit,
+          brand: data.brand,
+        };
+      });
       setStocks(stocksData);
     } catch (error) {
       console.error('Error fetching stocks:', error);
@@ -144,14 +180,17 @@ const SalesPage = () => {
   const addProductRow = () => {
     setProductsInSale([
       ...productsInSale,
-      { productId: '', quantity: 1, totalAmount: 0, maxQuantity: 0, unit: '', brand: '', error: '' },
+      { productId: '', productName: '', quantity: 1, totalAmount: 0, maxQuantity: 0, unit: '', brand: '', error: '' },
     ]);
   };
 
   const resetSalePage = () => {
     setSelectedCustomer(null);
     setProductsInSale([
-      { productId: '', quantity: 1, totalAmount: 0, maxQuantity: 0, unit: '', brand: '', error: '' },
+      {
+        productId: '', quantity: 1, totalAmount: 0, maxQuantity: 0, unit: '', brand: '', error: '',
+        productName: ''
+      },
     ]);
     setPaidAmount(0);
     setDueAmount(0);

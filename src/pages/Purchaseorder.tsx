@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
-import { collection, addDoc, getDocs, query, where, updateDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, updateDoc, doc, getDoc } from 'firebase/firestore';
 import { ShoppingBag, Package, Store, AlertCircle, CheckCircle, ShoppingCart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -76,7 +76,7 @@ export default function PurchaseOrder() {
   const handleVendorUpdate = async (vendorId: string, vendorDetails: any) => {
     const vendorDocRef = doc(db, 'vendors', vendorId);
     try {
-      const vendorDoc = await getDocs(vendorDocRef);
+      const vendorDoc = await getDoc(vendorDocRef);
       if (vendorDoc.exists()) {
         await updateDoc(vendorDocRef, vendorDetails);
       } else {

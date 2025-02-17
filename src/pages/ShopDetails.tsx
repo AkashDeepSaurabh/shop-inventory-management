@@ -37,10 +37,21 @@ export default function ShopDetails() {
       setIsLoading(true);
       try {
         const querySnapshot = await getDocs(collection(db, 'shops'));
-        const shopsList = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        const shopsList = querySnapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            shopName: data.shopName,
+            shopEmail: data.shopEmail,
+            address: data.address,
+            state: data.state,
+            country: data.country,
+            pinCode: data.pinCode,
+            contactDetails: data.contactDetails,
+            authorizedOwner: data.authorizedOwner,
+            gstNumber: data.gstNumber,
+          };
+        });
         setShops(shopsList);
       } catch (error) {
         console.error('Error fetching shops:', error);
@@ -89,10 +100,21 @@ export default function ShopDetails() {
 
       // Re-fetch the list of shops after submission
       const querySnapshot = await getDocs(collection(db, 'shops'));
-      const shopsList = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      const shopsList = querySnapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          shopName: data.shopName,
+          shopEmail: data.shopEmail,
+          address: data.address,
+          state: data.state,
+          country: data.country,
+          pinCode: data.pinCode,
+          contactDetails: data.contactDetails,
+          authorizedOwner: data.authorizedOwner,
+          gstNumber: data.gstNumber,
+        };
+      });
       setShops(shopsList);
     } catch (error) {
       console.error('Error adding shop details to Firestore:', error);
