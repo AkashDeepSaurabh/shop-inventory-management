@@ -78,10 +78,12 @@ export default function CustomerDetails() {
           const customerSnapshot = await getDocs(customerQuery);
 
           if (customerSnapshot.empty) {
+            console.log("No customers found. Setting customerNo to 1000");
             setForm((prev) => ({ ...prev, customerNo: '1000' }));
           } else {
             const lastCustomer = customerSnapshot.docs[0].data();
             const newCustomerNo = parseInt(lastCustomer.customerNo, 10) + 1;
+            console.log("Generated new customerNo:", newCustomerNo);
             setForm((prev) => ({ ...prev, customerNo: String(newCustomerNo) }));
           }
         } catch (error) {
@@ -92,7 +94,7 @@ export default function CustomerDetails() {
 
       generateCustomerNo();
     }
-  }, [id, isNewCustomer, navigate]);
+}, [id, isNewCustomer, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;

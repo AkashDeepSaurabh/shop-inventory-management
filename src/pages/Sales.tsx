@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import * as React from 'react';
+import { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
 import { collection, getDocs, getDoc, setDoc, updateDoc, doc, addDoc } from 'firebase/firestore';
 import toast from 'react-hot-toast';
