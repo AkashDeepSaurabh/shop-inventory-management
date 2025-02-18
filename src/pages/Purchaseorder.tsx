@@ -107,8 +107,8 @@ export default function PurchaseOrder() {
       const productRef = collection(db, 'purchasedStocks');
       const productQuery = query(
         productRef,
-        where("productId", "==", purchaseOrder.productId),
-        where("vendorId", "==", purchaseOrder.vendorId)
+        where("productId", "==", purchaseOrder.productId)
+        // where("vendorId", "==", purchaseOrder.vendorId)
       );
 
       const existingProductRef = await getDocs(productQuery);

@@ -316,7 +316,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Low Stock Products */}
+      {/* Low Stock Products
       <div className="bg-white rounded-xl shadow-lg p-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Low Stock Products</h2>
         <div className="overflow-x-auto">
@@ -355,7 +355,7 @@ export default function Dashboard() {
             </tbody>
           </table>
         </div>
-      </div>
+      </div> */}
 
       {/* Sales and Profit Charts */}
       <div className="space-y-6">
