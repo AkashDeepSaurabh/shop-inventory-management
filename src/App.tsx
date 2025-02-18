@@ -70,6 +70,7 @@ function App() {
           <Route path="low-stock-products" element={<LowStockPage />} />
           <Route path="payment-method" element={<PaymentMethodPage />} />
           <Route path="sales-dashboard" element={<SalesDashboard />} />
+          <Route path="shop-details" element={<ShopDetails />} />
         </Route>
       </Routes>
     </BrowserRouter>
