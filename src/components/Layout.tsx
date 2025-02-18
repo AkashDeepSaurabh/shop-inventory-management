@@ -1,7 +1,7 @@
 import { Fragment, useState } from 'react';
 import { Disclosure, Transition } from '@headlessui/react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { Menu, X, Home, ShoppingBag, DollarSign, Users, Box, Plus, ShoppingCart, LogOut } from 'lucide-react';
+import { Menu, X, Home, ShoppingBag, DollarSign, Users, Box, Plus, ShoppingCart, LogOut, Edit, ChevronRight } from 'lucide-react';
 import React from 'react';
 import Dashboard from '../pages/Dashboard';
 import SalesDashboard from '../pages/SalesDashboard';
@@ -9,32 +9,30 @@ import SalesDashboard from '../pages/SalesDashboard';
 const navigation = [
   { name: 'Dashboard', href: '/', icon: <Home className="w-5 h-5" /> },
   { name: 'Add New Customers', href: '/customers/new', icon: <Users className="w-5 h-5" /> },
-  { name: 'Sales', href: '/sales', icon: <DollarSign className="w-5 h-5" /> },
+  { name: 'Sales Management', href: '/sales', icon: <DollarSign className="w-5 h-5" /> },
   { name: 'Billing Management', href: '/customer-sales', icon: <ShoppingBag className="w-5 h-5" /> },
   { name: 'Customer Management', href: '/customers', icon: <Users className="w-5 h-5" /> },
-  { name: 'Stocks', href: '/stocks', icon: <Box className="w-5 h-5" /> },
+  { name: 'Stocks Management', href: '/stocks', icon: <Box className="w-5 h-5" /> },
   { name: 'Sales Dashboard', href: '/sales-dashboard', icon: <DollarSign className="w-5 h-5" /> },
+  { name: 'Shop Management', href: '/shop-details', icon: <ShoppingCart className="w-5 h-5" /> },
 ];
 
 export default function Layout() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const navigate = useNavigate();
-  
-    const handleNavigation = (path) => {
-      setIsMobileMenuOpen(false);
-      navigate(path);
-    };
+  const handleNavigation = (path) => {
+    setIsMobileMenuOpen(false);
+    navigate(path);
+  };
 
   const handleLogout = () => {
     const confirmLogout = window.confirm('Are you sure you want to logout?');
     if (confirmLogout) {
       localStorage.removeItem('user');
       navigate('/login', { replace: true });
-    }
-    const ResponsiveNavbar = ({ navigation, handleLogout }) => {
-      const [isMenuOpen, setIsMenuOpen] = useState(false);
     }
   };
 
@@ -71,7 +69,7 @@ export default function Layout() {
               } transition-transform duration-300 ease-in-out`}
               onClick={() => setMenuOpen(false)}
             >
-              <div 
+              <div
                 className="fixed inset-y-0 left-0 w-full max-w-xs bg-white shadow-lg"
                 onClick={(e) => e.stopPropagation()}
               >
@@ -131,6 +129,64 @@ export default function Layout() {
           </main>
         </div>
       </div>
+
+      {/* Floating Icon - FAB */}
+      <div
+        className="fixed bottom-8 right-8 bg-indigo-600 text-white p-4 rounded-full shadow-lg hover:bg-indigo-700 cursor-pointer"
+        onClick={() => setDrawerOpen(true)}
+      >
+        <Plus className="w-6 h-6" />
+      </div>
+
+      {/* Drawer for Sales and Add New Customer */}
+      <Transition
+        show={drawerOpen}
+        enter="transition ease-in-out duration-300"
+        enterFrom="transform opacity-0 translate-x-full"
+        enterTo="transform opacity-100 translate-x-0"
+        leave="transition ease-in-out duration-300"
+        leaveFrom="transform opacity-100 translate-x-0"
+        leaveTo="transform opacity-0 translate-x-full"
+      >
+        <div className="fixed inset-0 z-20 bg-gray-900 bg-opacity-50" onClick={() => setDrawerOpen(false)}></div>
+      </Transition>
+
+      <Transition
+        show={drawerOpen}
+        enter="transition ease-in-out duration-300"
+        enterFrom="transform opacity-0 translate-x-full"
+        enterTo="transform opacity-100 translate-x-0"
+        leave="transition ease-in-out duration-300"
+        leaveFrom="transform opacity-100 translate-x-0"
+        leaveTo="transform opacity-0 translate-x-full"
+      >
+        <div className="fixed inset-y-0 right-0 w-72 bg-white shadow-lg z-30">
+          <div className="h-full flex flex-col py-6 px-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-xl font-semibold text-gray-900">Quick Actions</h3>
+              <button onClick={() => setDrawerOpen(false)} className="text-gray-500 hover:text-gray-700">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="mt-6 space-y-4">
+              <button
+                onClick={() => handleNavigation('/sales')}
+                className="flex items-center text-indigo-600 hover:bg-indigo-100 px-4 py-2 rounded-md"
+              >
+                <DollarSign className="w-5 h-5 mr-3" />
+                Sales
+              </button>
+              <button
+                onClick={() => handleNavigation('/customers/new')}
+                className="flex items-center text-indigo-600 hover:bg-indigo-100 px-4 py-2 rounded-md"
+              >
+                <Plus className="w-5 h-5 mr-3" />
+                Add New Customer
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
     </div>
   );
 }

@@ -18,6 +18,8 @@ const StockDetailsPage = () => {
   const [stocks, setStocks] = useState<Stock[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [stocksPerPage] = useState(10);
 
   useEffect(() => {
     fetchStocks();
@@ -49,6 +51,15 @@ const StockDetailsPage = () => {
 
   // Low stock filter: Show products with quantity less than 10
   const lowStockProducts = stocks.filter(stock => stock.quantity < 10);
+
+  // Pagination logic
+  const indexOfLastStock = currentPage * stocksPerPage;
+  const indexOfFirstStock = indexOfLastStock - stocksPerPage;
+  const currentStocks = filteredStocks.slice(indexOfFirstStock, indexOfLastStock);
+
+  const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
+
+  const totalPages = Math.ceil(filteredStocks.length / stocksPerPage);
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -136,14 +147,14 @@ const StockDetailsPage = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {filteredStocks.length === 0 ? (
+                  {currentStocks.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
                         No products found
                       </td>
                     </tr>
                   ) : (
-                    filteredStocks.map((stock) => (
+                    currentStocks.map((stock) => (
                       <tr key={stock.id} className="hover:bg-gray-50 transition-colors duration-150">
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {stock.productName}
@@ -169,6 +180,27 @@ const StockDetailsPage = () => {
                 </tbody>
               </table>
             )}
+          </div>
+
+          {/* Pagination Section */}
+          <div className="mt-6 flex justify-center">
+            <button
+              onClick={() => paginate(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+            >
+              Prev
+            </button>
+            <span className="mx-4 text-sm font-medium text-gray-600">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => paginate(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+            >
+              Next
+            </button>
           </div>
         </div>
       </div>
