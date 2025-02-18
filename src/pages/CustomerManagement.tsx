@@ -2,13 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../lib/firebase';
 import { collection, getDocs } from 'firebase/firestore';
-import { PlusCircle, Edit2, ShoppingCart, Eye } from 'lucide-react';
+import { PlusCircle, Edit2, ShoppingCart, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function CustomerManagement() {
   const navigate = useNavigate();
   const [customers, setCustomers] = useState<any[]>([]);
   const [salesData, setSalesData] = useState<{ [key: string]: any[] }>({});
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const customersPerPage = 10;
 
   // Create a filteredCustomers array based on the search term and sort them by name
   const filteredCustomers = customers
@@ -18,13 +20,24 @@ export default function CustomerManagement() {
       return customerName.includes(search);
     })
     .sort((a, b) => {
-      // Sort customers by name (case-insensitive)
       const nameA = a.name.toLowerCase();
       const nameB = b.name.toLowerCase();
       if (nameA < nameB) return -1;
       if (nameA > nameB) return 1;
       return 0;
     });
+
+  // Calculate pagination values
+  const totalCustomers = filteredCustomers.length;
+  const totalPages = Math.ceil(totalCustomers / customersPerPage);
+  const indexOfLastCustomer = currentPage * customersPerPage;
+  const indexOfFirstCustomer = indexOfLastCustomer - customersPerPage;
+  const currentCustomers = filteredCustomers.slice(indexOfFirstCustomer, indexOfLastCustomer);
+
+  // Reset to first page when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   // Fetch customers from Firestore
   useEffect(() => {
@@ -45,17 +58,14 @@ export default function CustomerManagement() {
     fetchCustomers();
   }, []);
 
-  // Fetch sales history data for each customer from Firestore based on CustomerNo
+  // Fetch sales history data
   useEffect(() => {
     const fetchSalesHistory = async () => {
       try {
         const salesCollection = collection(db, 'sales');
         const salesSnapshot = await getDocs(salesCollection);
-
-        // Initialize an object to hold sales for each customer by CustomerNo
         const salesMap: { [key: string]: any[] } = {};
-
-        // Iterate through the sales data and group them by CustomerNo
+        
         salesSnapshot.docs.forEach((doc) => {
           const sale = doc.data();
           const { customerNo, paidAmount, dueAmount, saleDate } = sale;
@@ -68,7 +78,7 @@ export default function CustomerManagement() {
             saleId: doc.id,
             paidAmount,
             dueAmount,
-            saleDate: saleDate.toDate().toLocaleDateString(), // Convert Firestore timestamp to a human-readable date
+            saleDate: saleDate.toDate().toLocaleDateString(),
           });
         });
 
@@ -95,6 +105,10 @@ export default function CustomerManagement() {
 
   const addCustomer = () => {
     navigate(`/customers/new`);
+  };
+
+  const changePage = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
   };
 
   return (
@@ -140,7 +154,7 @@ export default function CustomerManagement() {
               </tr>
             </thead>
             <tbody>
-              {filteredCustomers.map((customer) => (
+              {currentCustomers.map((customer) => (
                 <tr key={customer.id} className="hover:bg-gray-50 transition-colors duration-150">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
                     {customer.customerNo}
@@ -150,7 +164,7 @@ export default function CustomerManagement() {
                       onClick={() => viewDetails(customer.id)}
                       className="text-sm text-indigo-600 hover:text-indigo-900 font-medium inline-flex items-center space-x-1"
                     >
-                      <span>{customer.name}</span> {/* Ensure this is 'name' */}
+                      <span>{customer.name}</span>
                       <Eye className="w-4 h-4 opacity-70" />
                     </button>
                   </td>
@@ -184,6 +198,48 @@ export default function CustomerManagement() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-6 py-4 bg-gray-50 border-t border-gray-200">
+            <div className="flex items-center space-x-2 text-sm text-gray-600">
+              <span>Showing {indexOfFirstCustomer + 1}-{Math.min(indexOfLastCustomer, totalCustomers)} of {totalCustomers} customers</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => changePage(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Previous
+              </button>
+              <div className="flex items-center space-x-2">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                  <button
+                    key={pageNum}
+                    onClick={() => changePage(pageNum)}
+                    className={`px-3 py-2 text-sm font-medium rounded-md ${
+                      pageNum === currentPage
+                        ? 'bg-indigo-600 text-white'
+                        : 'text-gray-700 hover:bg-gray-50 border border-gray-300'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => changePage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

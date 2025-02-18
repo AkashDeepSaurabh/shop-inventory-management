@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import * as React from 'react';
+import { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
 import { collection, getDocs, getDoc, setDoc, updateDoc, doc, addDoc } from 'firebase/firestore';
 import toast from 'react-hot-toast';
@@ -298,128 +299,167 @@ const SalesPage = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-6 bg-white rounded-lg shadow-xl">
-      <h1 className="text-3xl font-semibold text-gray-900 mb-6">New Sale</h1>
-      <div className="text-xl text-indigo-600 font-medium mb-6">
-        <span>Sale ID: </span><span className="font-bold">{saleId}</span>
-      </div>
-
-      <div className="space-y-8">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Select Customer</label>
-          <Select
-            value={selectedCustomer ? customerOptions.find(option => option.value === selectedCustomer.id) : null}
-            onChange={(selectedOption) => {
-              const customer = selectedOption ? customers.find((cust) => cust.id === selectedOption.value) : null;
-              setSelectedCustomer(customer || null);
-            }}
-            options={customerOptions}
-            className="w-full rounded-lg border-gray-300 shadow-sm"
-            placeholder="Search and Select Customer"
-          />
-        </div>
-
-        {selectedCustomer && (
-          <div className="bg-gray-50 rounded-lg p-4 space-y-2 mt-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Customer Details</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <p className="text-sm text-gray-700"><span className="font-medium">Name:</span> {selectedCustomer.name}</p>
-              <p className="text-sm text-gray-700"><span className="font-medium">Mobile:</span> {selectedCustomer.mobile}</p>
-              <p className="text-sm text-gray-700"><span className="font-medium">Email:</span> {selectedCustomer.email}</p>
-              <p className="text-sm text-gray-700"><span className="font-medium">Address:</span> {selectedCustomer.address}</p>
-            </div>
-          </div>
-        )}
-        
-        <div className="space-y-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Products in Sale</h2>
-
-          {productsInSale.map((product, index) => (
-            <div key={index} className="bg-white p-4 rounded-lg shadow-md mb-4">
-              <div className="flex items-center space-x-4">
-                <Select
-                  value={product.productId ? productOptions.find(option => option.value === product.productId) : null}
-                  onChange={(selectedOption) => handleProductChange(index, selectedOption)}
-                  options={productOptions}
-                  placeholder="Search Product"
-                  className="w-full rounded-md border-gray-300 shadow-sm"
-                />
-
-                <div className="w-20">
-                  <input
-                    type="number"
-                    value={product.quantity}
-                    onChange={(e) => handleQuantityChange(index, e)}
-                    className="w-full py-2 px-4 rounded-md border-gray-300 shadow-sm"
-                    min="1"
-                  />
+        <div className="min-h-screen bg-gray-50 py-8">
+          <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg">
+            {/* Header */}
+            <div className="p-6 border-b">
+              <div className="flex justify-between items-center">
+                <h1 className="text-3xl font-bold text-gray-900">New Sale</h1>
+                <div className="px-4 py-2 bg-gray-100 rounded-full">
+                  <span className="text-gray-600">Sale ID: </span>
+                  <span className="font-bold text-gray-900">{saleId}</span>
                 </div>
               </div>
-
-              {product.error && (
-                <p className="text-xs text-red-500 mt-2">{product.error}</p>
-              )}
             </div>
-          ))}
-
-          <button
-            type="button"
-            onClick={addProductRow}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
-          >
-            Add More Products
-          </button>
-        </div>
-
-        <div className="mt-6 space-y-6">
-          <div className="flex justify-between">
-            <div className="text-lg font-semibold">Total Amount: <span className="font-bold">{totalAmount}</span></div>
-          </div>
-
-          <div className="space-y-4">
-            <div className="flex justify-between">
-              <div className="text-lg font-semibold">Paid Amount:</div>
-              <input
-                type="number"
-                value={paidAmount}
-                onChange={handlePaidAmountChange}
-                className="w-32 px-4 py-2 border rounded-md"
-                placeholder="Enter Paid Amount"
-              />
+    
+            <div className="p-6 space-y-8">
+              {/* Customer Selection */}
+              <div className="bg-gray-50 p-6 rounded-lg border">
+                <label className="text-lg font-semibold text-gray-900 mb-4 block">
+                  Customer Information
+                </label>
+                <Select
+                  value={selectedCustomer ? customerOptions.find(option => option.value === selectedCustomer.id) : null}
+                  onChange={(selectedOption) => {
+                    const customer = selectedOption ? customers.find((cust) => cust.id === selectedOption.value) : null;
+                    setSelectedCustomer(customer || null);
+                  }}
+                  options={customerOptions}
+                  className="w-full"
+                  placeholder="Search and Select Customer"
+                />
+    
+                {selectedCustomer && (
+                  <div className="mt-4 bg-white rounded-lg p-6 shadow-sm">
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div>
+                        <span className="text-sm text-gray-500 block">Name</span>
+                        <span className="font-medium text-gray-900">{selectedCustomer.name}</span>
+                      </div>
+                      <div>
+                        <span className="text-sm text-gray-500 block">Mobile</span>
+                        <span className="font-medium text-gray-900">{selectedCustomer.mobile}</span>
+                      </div>
+                      <div>
+                        <span className="text-sm text-gray-500 block">Email</span>
+                        <span className="font-medium text-gray-900">{selectedCustomer.email}</span>
+                      </div>
+                      <div>
+                        <span className="text-sm text-gray-500 block">Address</span>
+                        <span className="font-medium text-gray-900">{selectedCustomer.address}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+    
+              {/* Products */}
+              <div className="bg-gray-50 p-6 rounded-lg border">
+                <label className="text-lg font-semibold text-gray-900 mb-4 block">
+                  Products
+                </label>
+                <div className="space-y-4">
+                  {productsInSale.map((product, index) => (
+                    <div key={index} className="bg-white p-4 rounded-lg shadow-sm">
+                      <div className="flex items-center gap-4">
+                        <div className="flex-grow">
+                          <label className="text-sm text-gray-600 mb-2 block">Product</label>
+                          <Select
+                            value={product.productId ? productOptions.find(option => option.value === product.productId) : null}
+                            onChange={(selectedOption) => handleProductChange(index, selectedOption)}
+                            options={productOptions}
+                            placeholder="Search Product"
+                            className="w-full"
+                          />
+                        </div>
+                        <div className="w-32">
+                          <label className="text-sm text-gray-600 mb-2 block">Quantity</label>
+                          <input
+                            type="number"
+                            value={product.quantity}
+                            onChange={(e) => handleQuantityChange(index, e)}
+                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            min="1"
+                          />
+                        </div>
+                      </div>
+                      {product.error && (
+                        <div className="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                          {product.error}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+    
+                  <button
+                    type="button"
+                    onClick={addProductRow}
+                    className="w-full px-4 py-3 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 border-2 border-dashed border-blue-200 transition-colors"
+                  >
+                    + Add Another Product
+                  </button>
+                </div>
+              </div>
+    
+              {/* Payment Details */}
+              <div className="bg-gray-50 p-6 rounded-lg border">
+                <label className="text-lg font-semibold text-gray-900 mb-4 block">
+                  Payment Details
+                </label>
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center py-3 border-b">
+                    <span className="text-gray-600">Total Amount</span>
+                    <span className="text-2xl font-bold text-gray-900">{totalAmount}</span>
+                  </div>
+    
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Paid Amount</span>
+                    <input
+                      type="number"
+                      value={paidAmount}
+                      onChange={handlePaidAmountChange}
+                      className="w-48 px-4 py-2 border rounded-lg text-right focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="0.00"
+                    />
+                  </div>
+    
+                  {paidAmountError && (
+                    <div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                      {paidAmountError}
+                    </div>
+                  )}
+    
+                  <div className="flex justify-between items-center py-3 border-t">
+                    <span className="text-gray-600">Due Amount</span>
+                    <span className="text-2xl font-bold text-red-600">{dueAmount}</span>
+                  </div>
+                </div>
+              </div>
+    
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-4 pt-6 border-t">
+                <button
+                  onClick={resetSalePage}
+                  className="px-6 py-3 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                >
+                  Reset Sale
+                </button>
+                <button
+                  onClick={confirmSale}
+                  className={`px-8 py-3 text-sm font-medium text-white rounded-lg transition-colors ${
+                    !isFormValid() 
+                      ? 'bg-gray-400 cursor-not-allowed' 
+                      : 'bg-green-600 hover:bg-green-700'
+                  }`}
+                  disabled={!isFormValid()}
+                >
+                  Proceed to Payment
+                </button>
+              </div>
             </div>
-
-            {paidAmountError && (
-              <div className="text-sm text-red-500">{paidAmountError}</div>
-            )}
-          </div>
-
-          <div className="flex justify-between">
-            <div className="text-lg font-semibold">Due Amount:</div>
-            <div className="font-bold">{dueAmount}</div>
-          </div>
-
-          <div className="mt-6">
-            <button
-              onClick={confirmSale}
-              className={`px-6 py-2 text-sm font-medium text-white rounded-lg ${
-                !isFormValid() ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'
-              }`}
-              disabled={!isFormValid()}
-            >
-              Proceed to Pay
-            </button>
-
-            <button
-              onClick={resetSalePage}
-              className="ml-4 px-6 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg"
-            >
-              Reset Sale
-            </button>
           </div>
         </div>
-      </div>
-    </div>
-  );
-};
-
-export default SalesPage;
+      );
+    };
+    
+    export default SalesPage;
