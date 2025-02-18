@@ -99,8 +99,6 @@ export default function PurchaseOrder() {
       if (selectedVendor) {
         await handleVendorUpdate(purchaseOrder.vendorId, {
           name: selectedVendor.name,
-          address: selectedVendor.address,
-          contact: selectedVendor.contact,
         });
       }
 
