@@ -16,6 +16,7 @@ import LowStockPage from './pages/LowStockPage';
 import PaymentMethodPage from './pages/PaymentMethodPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
+import SalesDashboard from './pages/SalesDashboard';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -68,6 +69,7 @@ function App() {
           <Route path="add-product" element={<AddProduct />} />
           <Route path="low-stock-products" element={<LowStockPage />} />
           <Route path="payment-method" element={<PaymentMethodPage />} />
+          <Route path="sales-dashboard" element={<SalesDashboard />} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -1,73 +1,63 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { db } from '../lib/firebase'; // Ensure you have Firebase setup
-import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { useNavigate } from 'react-router-dom';
+import { db } from '../lib/firebase';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { Eye, ChevronLeft, ChevronRight } from 'lucide-react';
 
-const PrintBill = () => {
-  const [saleData, setSaleData] = useState<any>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string>('');
-  const location = useLocation();
+export default function InvoiceList() {
   const navigate = useNavigate();
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const invoicesPerPage = 10;
 
-  // Get the saleId from the URL query string
-  const searchParams = new URLSearchParams(location.search);
-  const saleId = searchParams.get('saleId');
-
+  // Fetch invoices from Firestore
   useEffect(() => {
-    if (!saleId) {
-      setError('Sale ID is missing.');
-      setLoading(false);
-      return;
-    }
-
-    // Fetch sale data based on the saleId from Firestore
-    const fetchSaleData = async () => {
+    const fetchInvoices = async () => {
       try {
-        // Query the sales collection using saleId field
-        const salesQuery = query(
-          collection(db, 'sales'),
-          where("saleId", "==", saleId)
-        );
+        const salesCollection = collection(db, 'sales');
+        const salesQuery = query(salesCollection, orderBy('saleDate', 'desc'));
         const querySnapshot = await getDocs(salesQuery);
-
-        if (!querySnapshot.empty) {
-          // If the sale document is found, set the sale data
-          querySnapshot.forEach((doc) => {
-            console.log(doc.id, doc.data()); // Log the sale data
-            setSaleData(doc.data());
-          });
-        } else {
-          // If no matching document is found, set error message
-          setError('No sale found with the provided Sale ID.');
-        }
+        const invoiceList = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setInvoices(invoiceList);
       } catch (error) {
-        console.error('Error fetching sale data:', error);
-        setError('Error fetching sale details.');
+        console.error('Error fetching invoices:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchSaleData();
-  }, [saleId]);
+    fetchInvoices();
+  }, []);
 
-  if (loading) {
-    return <p>Loading sale details...</p>;
-  }
+  // Filter invoices based on search term
+  const filteredInvoices = invoices.filter(invoice => {
+    const searchString = searchTerm.toLowerCase();
+    return (
+      invoice.customerName?.toLowerCase().includes(searchString) ||
+      invoice.saleId?.toLowerCase().includes(searchString)
+    );
+  });
 
-  if (error) {
-    return <p>{error}</p>;
-  }
+  // Calculate pagination values
+  const totalInvoices = filteredInvoices.length;
+  const totalPages = Math.ceil(totalInvoices / invoicesPerPage);
+  const indexOfLastInvoice = currentPage * invoicesPerPage;
+  const indexOfFirstInvoice = indexOfLastInvoice - invoicesPerPage;
+  const currentInvoices = filteredInvoices.slice(indexOfFirstInvoice, indexOfLastInvoice);
 
-  if (!saleData) {
-    return <p>No sale data available.</p>;
-  }
+  // Reset to first page when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
-  const TAX_RATE = 0.082; // 8.2% tax rate
-  const subtotal = saleData.products.reduce((sum: number, product: any) => sum + product.totalAmount, 0);
-  const taxAmount = subtotal * TAX_RATE;
-  const total = subtotal + taxAmount;
+  const viewInvoice = (saleId: string) => {
+    navigate(`/print-bill?saleId=${saleId}`);
+  };
 
   const formatDate = (date: any) => {
     return new Date(date?.seconds ? date.seconds * 1000 : date).toLocaleDateString('en-US', {
@@ -77,127 +67,160 @@ const PrintBill = () => {
     });
   };
 
+  if (loading) {
+    return <div className="flex justify-center items-center h-screen">Loading invoices...</div>;
+  }
+
   return (
-    <div className="max-w-4xl mx-auto p-8 bg-white">
-      {/* Header Section */}
-      <div className="flex justify-between mb-8">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-800">INVOICE</h2>
-          <p className="text-gray-500 mt-1">Tax Invoice/Bill of Supply/Cash Memo</p>
-          <p className="text-gray-500">(Original for Recipient)</p>
-        </div>
-        <div className="text-right">
-          <p className="text-gray-600 font-medium">Invoice No: {saleData.saleId}</p>
-          <p className="text-gray-600">Date: {formatDate(saleData.saleDate)}</p>
-        </div>
+    <div className="max-w-7xl mx-auto p-6">
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Invoices</h1>
+        <p className="text-sm text-gray-600 mt-1">View and manage all invoices</p>
       </div>
 
-      {/* Company & Customer Details */}
-      <div className="grid grid-cols-2 gap-8 mb-8">
-        <div className="space-y-2">
-          <h3 className="font-bold text-gray-800">Sold By:</h3>
-          <p className="text-gray-600">Your Company Name</p>
-          <p className="text-gray-600">123 Business Street</p>
-          <p className="text-gray-600">City, State 12345</p>
-          <p className="text-gray-600">GSTIN: XX-XXXXXXXX</p>
-        </div>
-        <div className="space-y-2">
-          <h3 className="font-bold text-gray-800">Billing Address:</h3>
-          <p className="text-gray-600">{saleData.customerName}</p>
-          <p className="text-gray-600">{saleData.customerAddress}</p>
-          <p className="text-gray-600">Mobile: {saleData.customerMobile}</p>
-          <p className="text-gray-600">Email: {saleData.customerEmail}</p>
-        </div>
+      {/* Search */}
+      <div className="mb-6">
+        <input
+          type="text"
+          placeholder="Search by customer name or invoice number..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+        />
       </div>
 
-      {/* Products Table */}
-      <div className="mb-8">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-gray-50">
-              <th className="px-4 py-2 text-left border border-gray-200 font-semibold">Description</th>
-              <th className="px-4 py-2 text-left border border-gray-200 font-semibold">Brand</th>
-              <th className="px-4 py-2 text-center border border-gray-200 font-semibold">Qty</th>
-              <th className="px-4 py-2 text-center border border-gray-200 font-semibold">Unit</th>
-              <th className="px-4 py-2 text-right border border-gray-200 font-semibold">Amount</th>
+      {/* Invoices Table */}
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Invoice No
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Customer
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Date
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Total Amount
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Status
+              </th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
             </tr>
           </thead>
-          <tbody>
-            {saleData.products.map((product: any, index: number) => (
-              <tr key={index} className="border-b">
-                <td className="px-4 py-2 border border-gray-200">{product.productName}</td>
-                <td className="px-4 py-2 border border-gray-200">{product.brand}</td>
-                <td className="px-4 py-2 text-center border border-gray-200">{product.quantity}</td>
-                <td className="px-4 py-2 text-center border border-gray-200">{product.unit}</td>
-                <td className="px-4 py-2 text-right border border-gray-200">
-                  ₹ {product.totalAmount.toFixed(2)}
+          <tbody className="bg-white divide-y divide-gray-200">
+            {currentInvoices.map((invoice) => (
+              <tr key={invoice.id} className="hover:bg-gray-50">
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-medium text-gray-900">{invoice.saleId}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">{invoice.customerName}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-500">{formatDate(invoice.saleDate)}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">₹ {(invoice.paidAmount + invoice.dueAmount).toFixed(2)}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                    invoice.dueAmount > 0 
+                      ? 'bg-yellow-100 text-yellow-800' 
+                      : 'bg-green-100 text-green-800'
+                  }`}>
+                    {invoice.dueAmount > 0 ? 'Partial' : 'Paid'}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <button
+                    onClick={() => viewInvoice(invoice.saleId)}
+                    className="text-indigo-600 hover:text-indigo-900"
+                  >
+                    <Eye className="w-5 h-5" />
+                  </button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-      </div>
 
-      {/* Totals Section */}
-      <div className="w-72 ml-auto space-y-2">
-        <div className="flex justify-between border-b pb-2">
-          <span className="font-medium">Subtotal:</span>
-          <span>₹ {subtotal.toFixed(2)}</span>
-        </div>
-        <div className="flex justify-between border-b pb-2">
-          <span className="font-medium">Tax (8.2%):</span>
-          <span>₹ {taxAmount.toFixed(2)}</span>
-        </div>
-        <div className="flex justify-between border-b pb-2">
-          <span className="font-medium">Total Amount:</span>
-          <span className="font-bold">₹ {total.toFixed(2)}</span>
-        </div>
-        <div className="flex justify-between border-b pb-2">
-          <span className="font-medium">Paid Amount:</span>
-          <span>₹ {saleData.paidAmount.toFixed(2)}</span>
-        </div>
-        <div className="flex justify-between font-bold">
-          <span>Balance Due:</span>
-          <span>₹ {saleData.dueAmount.toFixed(2)}</span>
-        </div>
-      </div>
-
-      {/* Terms and Notes */}
-      <div className="mt-8 text-sm text-gray-600">
-        <p className="font-medium mb-2">Terms & Conditions:</p>
-        <ul className="list-disc list-inside space-y-1">
-          <li>Payment is due within 30 days</li>
-          <li>Goods once sold cannot be returned</li>
-          <li>This is a computer generated invoice</li>
-        </ul>
-      </div>
-
-      {/* Footer */}
-      <div className="mt-8 pt-8 border-t">
-        <div className="flex justify-between">
-          <div className="text-gray-600">
-            <p className="font-medium">Authorized Signatory</p>
-            <div className="mt-16 border-t border-gray-400 w-48">
-              <p className="text-sm mt-1">For Your Company Name</p>
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
+            <div className="flex items-center justify-between">
+              <div className="flex-1 flex justify-between sm:hidden">
+                <button
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
+              <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm text-gray-700">
+                    Showing{' '}
+                    <span className="font-medium">{indexOfFirstInvoice + 1}</span>
+                    {' to '}
+                    <span className="font-medium">
+                      {Math.min(indexOfLastInvoice, totalInvoices)}
+                    </span>
+                    {' of '}
+                    <span className="font-medium">{totalInvoices}</span> invoices
+                  </p>
+                </div>
+                <div>
+                  <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                    <button
+                      onClick={() => setCurrentPage(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                          pageNum === currentPage
+                            ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600'
+                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
+                  </nav>
+                </div>
+              </div>
             </div>
           </div>
-          <div className="text-right text-gray-600">
-            <p className="italic">Thank you for your business!</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Print Button */}
-      <div className="mt-8 text-center print:hidden">
-        <button
-          onClick={() => window.print()}
-          className="px-6 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors"
-        >
-          Print Invoice
-        </button>
+        )}
       </div>
     </div>
   );
-};
-
-export default PrintBill;
+}
