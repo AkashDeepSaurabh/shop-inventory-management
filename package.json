@@ -29,7 +29,8 @@
     "react-scripts": "^3.0.1",
     "react-select": "^5.9.0",
     "recharts": "^2.15.1",
-    "tailwind-rn": "^4.2.0"
+    "tailwind-rn": "^4.2.0",
+    "typescript": "^3.9.10"
   },
   "devDependencies": {
     "@types/react": "^18.3.18",
@@ -44,7 +45,6 @@
     "eslint-plugin-react-refresh": "^0.4.5",
     "postcss": "^8.4.33",
     "tailwindcss": "^3.4.1",
-    "typescript": "^4.9.5",
     "vite": "^5.0.8"
   }
 }
